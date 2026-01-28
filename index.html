@@ -56,7 +56,7 @@
 			return lower.includes('cdn.jsdelivr.net') && lower.includes('shellbros/mathlete');
 		}
 
-		static _resolveUrl(path) {
+		static _resolveurl(path) {
 			const base = window.JSCDN || this._jscdnFallback;
 			const normalizedBase = base.endsWith('/') ? base : base + '/';
 			const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
@@ -286,7 +286,7 @@
 		}
 
 		static _doLoadJS(path, callback) {
-			const p = this._resolveUrl(path);
+			const p = this._resolveurl(path);
 			if (!p) {
 				console.error('[Loader] Aborting load, invalid path:', path);
 				return;
@@ -658,7 +658,7 @@
 </style><!-- Styles & Fonts -->
 <link href="https://fonts.googleapis.com/css?family=Sigmar+One|Nunito:100,200,600,700,900" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/shellbros/mathlete/styles/style.min.css?1769621892"><script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/shellbros/mathlete/styles/style.min.css?1769622360"><script>
 function storageFactory(getStorage) {
 
 	const inMemoryStorage = {};
