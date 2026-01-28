@@ -63,6 +63,8 @@
 			const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
 			const url = normalizedBase + normalizedPath;
 
+			console.log('[Loader] Resolving URL:', url);
+
 			if (!this._validateUrl(url)) {
 				console.error('[Loader] URL failed validation:', url);
 				return null;
@@ -661,7 +663,7 @@
 </style><!-- Styles & Fonts -->
 <link href="https://fonts.googleapis.com/css?family=Sigmar+One|Nunito:100,200,600,700,900" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/shellbros/mathlete/styles/style.min.css?1769627480"><script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/shellbros/mathlete/styles/style.min.css?1769628229"><script>
 function storageFactory(getStorage) {
 
 	const inMemoryStorage = {};
