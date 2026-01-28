@@ -36,6 +36,7 @@
 
     getAds();
 
+	// CDN-IGNORE-START
 	class Loader {
 
 		constructor() {
@@ -139,7 +140,7 @@
 			if (this.blueWizSrcAlt) {
 				blueWizLogo.src = this.blueWizSrcAlt;
 			} else {
-				blueWizLogo.src = this._resolveurl('https://cdn.jsdelivr.net/gh/shellbros/mathlete/img/blueWizard_logo.webp') || 'https://cdn.jsdelivr.net/gh/shellbros/mathlete/img/blueWizard_logo.webp';
+				blueWizLogo.src = this._resolveurl('img/blueWizard_logo.webp') || 'img/blueWizard_logo.webp';
 			}
 
 			blueWizLogo.style = `
@@ -316,7 +317,7 @@
 							return;
 						}
 
-						const wasmUrl = Loader._resolveurl('https://cdn.jsdelivr.net/gh/shellbros/mathlete/js/wasm_loader.js');
+						const wasmUrl = Loader._resolveurl('js/wasm_loader.js');
 						if (!wasmUrl) {
 							console.error('[Loader] Failed to resolve wasm_loader URL');
 							return;
@@ -353,6 +354,8 @@
 			})(p, callback);
 		}
 	}
+
+	// CDN-IGNORE-END
 
 	Loader.actualTasks = 0;
 	Loader.tasks = 17;
@@ -658,7 +661,7 @@
 </style><!-- Styles & Fonts -->
 <link href="https://fonts.googleapis.com/css?family=Sigmar+One|Nunito:100,200,600,700,900" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/shellbros/mathlete/styles/style.min.css?1769622360"><script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/shellbros/mathlete/styles/style.min.css?1769627480"><script>
 function storageFactory(getStorage) {
 
 	const inMemoryStorage = {};
@@ -1370,14 +1373,15 @@ const ShellStreak = {
 	function ssJSComplete () {
 		window.onloadingcomplete();
 	}
-
+	// CDN-IGNORE-START
 	let loaderInterval = setInterval(() => {
 		if (window.Loader) {
 			clearInterval(loaderInterval);
-			Loader.loadJS('https://cdn.jsdelivr.net/gh/shellbros/mathlete/js/screenShot.js');
-			Loader.loadJS('https://cdn.jsdelivr.net/gh/shellbros/mathlete/js/shellshock.js', ssJSComplete);
+			Loader.loadJS('js/screenShot.js');
+			Loader.loadJS('js/shellshock.js', ssJSComplete);
 		}
 	}, 100);
+	// CDN-IGNORE-END
 </script>		<!-- google tag manager noscript -->
 		<!-- Google Tag Manager (noscript) -->
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-K5MSJHJ"
