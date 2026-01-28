@@ -6,6 +6,7 @@
 		<script>
     var dynamicContentRoot = '';
     var dynamicContentPrefix = '';
+    // const JSCDN = 'https://cdn.jsdelivr.net/gh/shellbros/shellbros.github.io/';
     var gtmOptions = {
         cookie_flags: 'secure;samesite=none'
     };
@@ -35,255 +36,329 @@
 
     getAds();
 
-    class Loader {
+	class Loader {
 
-        constructor() {
-            this.logo = '';
-            this.blueWizSrcAlt = '';
-            this.isShowing = false;
-        }
+		constructor() {
+			this.logo = '';
+			this.blueWizSrcAlt = '';
+			this.isShowing = false;
+		}
 
-        static show() {
-            let container = document.createElement('div');
-            container.id = 'progress-container';
-            container.style = `
-			position: fixed;
-			top: 0;
-			left: 0;
-			height: 100vh;
-			width: 100vw;
-			z-index: 2000;
-			background-image: var(--ss-lightoverlay);
-		`;
+		// --- URL resolution and validation ---
+		static _jscdnReady = false;
+		static _jscdnFallback = 'https://cdn.jsdelivr.net/gh/shellbros/mathlete/';
+		static _pendingLoads = [];
+		static _jscdnCheckAttempts = 0;
+		static _jscdnInterval = null;
 
-            const progressWrapper = document.createElement('div');
-            progressWrapper.id = 'progress-wrapper';
-            progressWrapper.className = 'load_screen align-items-center';
-            progressWrapper.style = `
-			position: absolute;
-			left: 50%;
-			top: -6em;
-			transform: translateX(-50%);
-			background-image: none;
-		`;
+		static _validateUrl(url) {
+			const lower = url.toLowerCase();
+			return lower.includes('cdn.jsdelivr.net') && lower.includes('shellbros/mathlete');
+		}
 
-            const blueWizLogo = document.createElement('img');
+		static _resolveUrl(path) {
+			const base = window.JSCDN || this._jscdnFallback;
+			const normalizedBase = base.endsWith('/') ? base : base + '/';
+			const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
+			const url = normalizedBase + normalizedPath;
 
-            if (this.blueWizSrcAlt) {
-                blueWizLogo.src = this.blueWizSrcAlt;
-            } else {
-                blueWizLogo.src = 'https://cdn.jsdelivr.net/gh/shellbros/mathlete/img/blueWizard_logo.webp';
-            }
+			if (!this._validateUrl(url)) {
+				console.error('[Loader] URL failed validation:', url);
+				return null;
+			}
+			return url;
+		}
 
-            blueWizLogo.style = `
-			width: 16em;
-			display: block;
-			margin: 5em auto 0;
-			z-index: 2000;
-			position: absolute;
-			left: 50%;
-			bottom: 8em;
-			transform: translateX(-50%);
-		`;
+		static _checkJSCDN() {
+			if (this._jscdnReady) return true;
+			
+			if (window.JSCDN || this._jscdnCheckAttempts >= 50) {
+				this._jscdnReady = true;
+				if (!window.JSCDN) {
+					console.warn('[Loader] JSCDN not set after timeout, using fallback');
+				}
+				this._flushPendingLoads();
+				return true;
+			}
+			return false;
+		}
 
-            this.logo = document.createElement('img');
-            this.logo.src = shellLogo;
-            this.logo.style = 'height: 16em';
-            this.logo.id = 'logo-svg';
-            // container.appendChild(logo);
+		static _waitForJSCDN(callback) {
+			if (this._checkJSCDN()) {
+				callback();
+				return;
+			}
 
-            const progressOuter = document.createElement('div');
-            progressOuter.id = 'progress-outer';
-            progressOuter.style = `
-			position: relative;
-			background: #643219;
-			border-radius: 2em;
-			height: 3.3em;
-			width: 24em;
-			margin-top: 2em;
-		`;
+			this._pendingLoads.push(callback);
 
+			if (!this._jscdnInterval) {
+				this._jscdnInterval = setInterval(() => {
+					this._jscdnCheckAttempts++;
+					if (this._checkJSCDN()) {
+						clearInterval(this._jscdnInterval);
+						this._jscdnInterval = null;
+					}
+				}, 100);
+			}
+		}
 
-            let progress = document.createElement('div');
-            progress.style = `
-			margin-top: 1em;
-			width: 23em;
-			height: 2.2em;
-			background: white;
-			padding: 0.5em;
-			border-radius: 2em;
-			margin: .3em .5em 0;
-		`;
-            container.appendChild(progress);
+		static _flushPendingLoads() {
+			const pending = this._pendingLoads.slice();
+			this._pendingLoads = [];
+			for (const cb of pending) {
+				try { cb(); } catch (e) { console.error('[Loader] Pending load error:', e); }
+			}
+		}
 
-            let progressBar = document.createElement('span');
-            progressBar.id = 'progressBar';
-            progressBar.style = `
-			display: block;
-			width: 20%;
-			height: 100%;
-			background: orange;
-			border-radius: 2em;
-			margin-left: 80%;
-			margin: 0 .3em .5em 0;
-			opacity: 0;
-			transition: margin-left linear 500ms;
-			transition-timing-function: ease-in-out;
-		`;
+		static show() {
+			let container = document.createElement('div');
+			container.id = 'progress-container';
+			container.style = `
+				position: fixed;
+				top: 0;
+				left: 0;
+				height: 100vh;
+				width: 100vw;
+				z-index: 2000;
+				background-image: var(--ss-lightoverlay);
+			`;
 
-            const progressBarOutside = document.createElement('div');
+			const progressWrapper = document.createElement('div');
+			progressWrapper.id = 'progress-wrapper';
+			progressWrapper.className = 'load_screen align-items-center';
+			progressWrapper.style = `
+				position: absolute;
+				left: 50%;
+				top: -6em;
+				transform: translateX(-50%);
+				background-image: none;
+			`;
 
+			const blueWizLogo = document.createElement('img');
 
-            progress.appendChild(progressBar);
-            progressWrapper.appendChild(this.logo);
-            progressOuter.appendChild(progress);
-            progressWrapper.appendChild(progressOuter);
+			if (this.blueWizSrcAlt) {
+				blueWizLogo.src = this.blueWizSrcAlt;
+			} else {
+				blueWizLogo.src = this._resolveurl('https://cdn.jsdelivr.net/gh/shellbros/mathlete/img/blueWizard_logo.webp') || 'https://cdn.jsdelivr.net/gh/shellbros/mathlete/img/blueWizard_logo.webp';
+			}
 
-            container.appendChild(progressWrapper);
-            container.appendChild(blueWizLogo);
+			blueWizLogo.style = `
+				width: 16em;
+				display: block;
+				margin: 5em auto 0;
+				z-index: 2000;
+				position: absolute;
+				left: 50%;
+				bottom: 8em;
+				transform: translateX(-50%);
+			`;
 
-            // Minor for the progress bar intial load
-            setTimeout(() => progressBar.style.opacity = 1, 600);
+			this.logo = document.createElement('img');
+			this.logo.src = shellLogo;
+			this.logo.style = 'height: 16em';
+			this.logo.id = 'logo-svg';
 
+			const progressOuter = document.createElement('div');
+			progressOuter.id = 'progress-outer';
+			progressOuter.style = `
+				position: relative;
+				background: #643219;
+				border-radius: 2em;
+				height: 3.3em;
+				width: 24em;
+				margin-top: 2em;
+			`;
 
-            Loader.barInterval = setInterval(() => {
-                if (Loader.progressBar.style.marginLeft == '0%') {
-                    Loader.progressBar.style.marginLeft = '80%';
-                } else {
-                    Loader.progressBar.style.marginLeft = '0%';
-                }
-            }, 500);
+			let progress = document.createElement('div');
+			progress.style = `
+				margin-top: 1em;
+				width: 23em;
+				height: 2.2em;
+				background: white;
+				padding: 0.5em;
+				border-radius: 2em;
+				margin: .3em .5em 0;
+			`;
+			container.appendChild(progress);
 
-            Loader.progressBar = progressBar;
-            Loader.container = container;
+			let progressBar = document.createElement('span');
+			progressBar.id = 'progressBar';
+			progressBar.style = `
+				display: block;
+				width: 20%;
+				height: 100%;
+				background: orange;
+				border-radius: 2em;
+				margin-left: 80%;
+				margin: 0 .3em .5em 0;
+				opacity: 0;
+				transition: margin-left linear 500ms;
+				transition-timing-function: ease-in-out;
+			`;
 
-            let app = document.body;
-            app.appendChild(container);
-            this.isShowing = true;
-        }
+			const progressBarOutside = document.createElement('div');
 
-        static hide() {
-            Loader.container.style = "opacity : 0; transition: opacity 1s;";
-            setTimeout(() => {
-                Loader.container.remove();
-                this.isShowing = false;
-            }, 1000);
-        }
+			progress.appendChild(progressBar);
+			progressWrapper.appendChild(this.logo);
+			progressOuter.appendChild(progress);
+			progressWrapper.appendChild(progressOuter);
 
-        static addTask() {
-            let id = Loader.loaded.length;
-            //console.log('Loading tasks: ', ++Loader.actualTasks);
-            Loader.loaded.push(0);
-            return id;
-        }
+			container.appendChild(progressWrapper);
+			container.appendChild(blueWizLogo);
 
-        static finish(id) {
-            clearInterval(Loader.barInterval);
+			setTimeout(() => progressBar.style.opacity = 1, 600);
 
-            if (Loader.progressBar) {
-                Loader.progressBar.style.marginLeft = '0%';
-                Loader.progressBar.style.transition = '';
+			Loader.barInterval = setInterval(() => {
+				if (Loader.progressBar.style.marginLeft == '0%') {
+					Loader.progressBar.style.marginLeft = '80%';
+				} else {
+					Loader.progressBar.style.marginLeft = '0%';
+				}
+			}, 500);
 
-                Loader.loaded[id] = 1;
-                Loader.updateBar();
-            }
-        }
+			Loader.progressBar = progressBar;
+			Loader.container = container;
 
-        static progress(id, value, total) {
-            clearInterval(Loader.barInterval);
+			let app = document.body;
+			app.appendChild(container);
+			this.isShowing = true;
+		}
 
-            if (Loader.progressBar) {
-                Loader.progressBar.style.marginLeft = '0%';
-                Loader.progressBar.style.transition = '';
+		static hide() {
+			Loader.container.style = "opacity : 0; transition: opacity 1s;";
+			setTimeout(() => {
+				Loader.container.remove();
+				this.isShowing = false;
+			}, 1000);
+		}
 
-                Loader.loaded[id] = value / total;
+		static addTask() {
+			let id = Loader.loaded.length;
+			Loader.loaded.push(0);
+			return id;
+		}
 
-                Loader.updateBar();
-            }
+		static finish(id) {
+			clearInterval(Loader.barInterval);
 
-            return id;
-        }
+			if (Loader.progressBar) {
+				Loader.progressBar.style.marginLeft = '0%';
+				Loader.progressBar.style.transition = '';
 
-        static updateBar() {
-            let loadedTotal = 0;
+				Loader.loaded[id] = 1;
+				Loader.updateBar();
+			}
+		}
 
-            for (let l of Loader.loaded) {
-                loadedTotal += l;
-            }
-            let percent = loadedTotal / Loader.tasks * 95 + 5;
-            // no more than 100%
-            if (percent > 100) {
-                percent = 100;
-            }
+		static progress(id, value, total) {
+			clearInterval(Loader.barInterval);
 
-            Loader.progressBar.style.width = percent + '%';
-        }
+			if (Loader.progressBar) {
+				Loader.progressBar.style.marginLeft = '0%';
+				Loader.progressBar.style.transition = '';
 
-        static loadJS(path, callback) {
-            let p = path;
+				Loader.loaded[id] = value / total;
 
-            (function(p, cb) {
-                let xhr = new XMLHttpRequest();
-                xhr.open('GET', p, true);
+				Loader.updateBar();
+			}
 
-                let id = Loader.addTask();
+			return id;
+		}
 
-                xhr.onprogress = event => {
-                    if (Loader.progressBar) {
-                        id = Loader.progress(id, event.loaded, event.total);
-                    }
-                };
+		static updateBar() {
+			let loadedTotal = 0;
 
-                xhr.onload = () => {
-                    if (xhr.status != 200) {
-                        console.log(`Error ${xhr.status}: ${xhr.statusText}`);
-                    } else {
-                        if (!cb) {
-                            Loader.finish(id);
-                            let script = document.createElement('script');
-                            script.innerHTML = xhr.response;
-                            document.body.appendChild(script);
-                            return;
-                        }
+			for (let l of Loader.loaded) {
+				loadedTotal += l;
+			}
+			let percent = loadedTotal / Loader.tasks * 95 + 5;
+			if (percent > 100) {
+				percent = 100;
+			}
 
-                        import('https://cdn.jsdelivr.net/gh/shellbros/mathlete/js/wasm_loader.js?6').then(({
-                            init,
-                            process,
-                            verify,
-                            validate,
-                            get_yaw_pitch,
-                            reset_yaw_pitch,
-                            set_mouse_params,
-                            poll_gamepad
-                        }) => {
-                            window.verify = verify;
-                            window.validate = validate;
-                            window.get_yaw_pitch = get_yaw_pitch;
-                            window.reset_yaw_pitch = reset_yaw_pitch;
-                            window.set_mouse_params = set_mouse_params;
-                            window.poll_gamepad = poll_gamepad;
+			Loader.progressBar.style.width = percent + '%';
+		}
 
-                            let encoder = new TextEncoder('utf-8');
-                            let decoder = new TextDecoder('utf-8');
-                            let data = encoder.encode(xhr.response);
-                            init().then(() => {
-                                process(data);
-                                cb();
-                            });
-                        });
-                    }
-                };
+		static loadJS(path, callback) {
+			this._waitForJSCDN(() => {
+				this._doLoadJS(path, callback);
+			});
+		}
 
-                xhr.send();
-            })(path, callback);
-        }
-    }
+		static _doLoadJS(path, callback) {
+			const p = this._resolveUrl(path);
+			if (!p) {
+				console.error('[Loader] Aborting load, invalid path:', path);
+				return;
+			}
 
-    Loader.actualTasks = 0;
-    Loader.tasks = 17;
-    Loader.loaded = [];
+			(function(url, cb) {
+				let xhr = new XMLHttpRequest();
+				xhr.open('GET', url, true);
 
-    window.Loader = Loader;
+				let id = Loader.addTask();
+
+				xhr.onprogress = event => {
+					if (Loader.progressBar) {
+						id = Loader.progress(id, event.loaded, event.total);
+					}
+				};
+
+				xhr.onload = () => {
+					if (xhr.status != 200) {
+						console.log(`Error ${xhr.status}: ${xhr.statusText}`);
+					} else {
+						if (!cb) {
+							Loader.finish(id);
+							let script = document.createElement('script');
+							script.innerHTML = xhr.response;
+							document.body.appendChild(script);
+							return;
+						}
+
+						const wasmUrl = Loader._resolveurl('https://cdn.jsdelivr.net/gh/shellbros/mathlete/js/wasm_loader.js');
+						if (!wasmUrl) {
+							console.error('[Loader] Failed to resolve wasm_loader URL');
+							return;
+						}
+
+						import(wasmUrl).then(({
+							init,
+							process,
+							verify,
+							validate,
+							get_yaw_pitch,
+							reset_yaw_pitch,
+							set_mouse_params,
+							poll_gamepad
+						}) => {
+							window.verify = verify;
+							window.validate = validate;
+							window.get_yaw_pitch = get_yaw_pitch;
+							window.reset_yaw_pitch = reset_yaw_pitch;
+							window.set_mouse_params = set_mouse_params;
+							window.poll_gamepad = poll_gamepad;
+
+							let encoder = new TextEncoder('utf-8');
+							let data = encoder.encode(xhr.response);
+							init().then(() => {
+								process(data);
+								cb();
+							});
+						});
+					}
+				};
+
+				xhr.send();
+			})(p, callback);
+		}
+	}
+
+	Loader.actualTasks = 0;
+	Loader.tasks = 17;
+	Loader.loaded = [];
+
+	window.Loader = Loader;
 
     function openFirebaseDb() {
         return new Promise((resolve, reject) => {
@@ -583,7 +658,7 @@
 </style><!-- Styles & Fonts -->
 <link href="https://fonts.googleapis.com/css?family=Sigmar+One|Nunito:100,200,600,700,900" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/shellbros/mathlete/styles/style.min.css?1769545597"><script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/shellbros/mathlete/styles/style.min.css?1769621892"><script>
 function storageFactory(getStorage) {
 
 	const inMemoryStorage = {};
@@ -873,7 +948,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- Music audio tag -->
 <audio id="theAudio" preload="metadata"></audio>
 <!-- VueJS -->
-<script src="https://cdn.jsdelivr.net/gh/shellbros/mathlete/js/vue/vue.min.2.6.10.js"></script><!-- tools and varibles -->
+<script src="https://cdn.jsdelivr.net/gh/shellbros/mathlete/js/vue/vue2.6.10.js"></script><!-- tools and varibles -->
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
 <script>
 	localStore.removeItem('brbTime');
@@ -1101,10 +1176,10 @@ function getSetIncrementStoredNum(name, set) {
 var freeColors = shellColors.slice(0, 7);
 var paidColors = shellColors.slice(7, shellColors.length);
 
-	const RESPAWNADUNIT = 'shellshockers_respawn_banner-sh';
-	const RESPAWN2ADUNIT = 'shellshockers_respawn_banner_2-sh';
-	const RESPAWN3ADUNIT = 'shellshockers_respawn_banner_3-sh';
-	const  AIPSUBID = 'shellshock.io';
+	const RESPAWNADUNIT = 'shellshockers_respawn_banner-pr2';
+	const RESPAWN2ADUNIT = 'shellshockers_respawn_banner_2-pr';
+	const RESPAWN3ADUNIT = 'shellshockers_respawn_banner_3-pr';
+	const  AIPSUBID = 'proxy';
 
 	var Slot = {
 		Primary: 0,
@@ -1299,8 +1374,8 @@ const ShellStreak = {
 	let loaderInterval = setInterval(() => {
 		if (window.Loader) {
 			clearInterval(loaderInterval);
-			Loader.loadJS('https://cdn.jsdelivr.net/gh/shellbros/mathlete/js/screenShot.js?1692215954');
-			Loader.loadJS('https://cdn.jsdelivr.net/gh/shellbros/mathlete/js/shellshock.js?1769545657', ssJSComplete);
+			Loader.loadJS('https://cdn.jsdelivr.net/gh/shellbros/mathlete/js/screenShot.js');
+			Loader.loadJS('https://cdn.jsdelivr.net/gh/shellbros/mathlete/js/shellshock.js', ssJSComplete);
 		}
 	}, 100);
 </script>		<!-- google tag manager noscript -->
@@ -1313,9 +1388,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <div id="shellshockers_titlescreen"></div>
 <div id="shellshockers_chicken_nugget_banner"></div>
-<div id="shellshockers_respawn_banner-sh"></div>
-<div id="shellshockers_respawn_banner_2-sh"></div>
-<div id="shellshockers_respawn_banner_3-sh"></div>
+<div id="shellshockers_respawn_banner-pr2"></div>
+<div id="shellshockers_respawn_banner_2-pr"></div>
+<div id="shellshockers_respawn_banner_3-pr"></div>
 <div id="shellshockers_respawn_banner"></div>
 <div id="shellshockers_respawn_banner-new"></div>
 <div id="ShellShockers_LoadingScreen_HouseAds"></div>
@@ -12159,21 +12234,21 @@ var comp_item_grid = {
                 }
             },
             style() {
-                return this.productTypePass ? `background-image: url(https://cdn.jsdelivr.net/gh/shellbros/mathlete/img/store/passes/${this.item.sku}_bg.png); background-size: cover;` : '';
+                return this.productTypePass ? `background-image: url(https://cdn.jsdelivr.net/gh/shellbros/mathlete/${window.JSCDN}img/store/passes/${this.item.sku}_bg.png); background-size: cover;` : '';
             },
             img() {
                 switch (this.item.type) {
                     case 'item':
-                        return `https://cdn.jsdelivr.net/gh/shellbros/mathlete/img/store/items/${this.item.sku}.webp`;
+                        return `https://cdn.jsdelivr.net/gh/shellbros/mathlete/${window.JSCDN}img/store/items/${this.item.sku}.webp`;
                         break;
                     case 'bundle':
-                        return `https://cdn.jsdelivr.net/gh/shellbros/mathlete/img/store/bundles/${this.item.sku}.webp`;
+                        return `https://cdn.jsdelivr.net/gh/shellbros/mathlete/${window.JSCDN}img/store/bundles/${this.item.sku}.webp`;
                         break;
                     case 'pass':
-                        return `https://cdn.jsdelivr.net/gh/shellbros/mathlete/img/store/passes/${this.item.sku}.png`;
+                        return `https://cdn.jsdelivr.net/gh/shellbros/mathlete/${window.JSCDN}img/store/passes/${this.item.sku}.png`;
                         break;
                     default:
-                        return `img/${!this.isSaleEvent ? '' : 'store-black-friday/'}${this.item.sku}.webp`;
+                        return `${window.JSCDN}${!this.isSaleEvent ? '' : 'store-black-friday/'}${this.item.sku}.webp`;
                         break;
                 }
             },

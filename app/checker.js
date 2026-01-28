@@ -594,6 +594,22 @@
     return null;
   }
 
+async function initJSCDN() {
+  window.JSCDN = null;
+  try {
+    const res = await fetch('/app/build.json', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.build_version) {
+        window.JSCDN = `https://cdn.jsdelivr.net/gh/shellbros/mathlete@${data.build_version}`;
+        console.log('JSCDN initialized:', window.JSCDN);
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load build.json:', e);
+  }
+}
+
 async function preloadProxyHost() {
 
 	window.overrideWssBase = null;
@@ -613,6 +629,7 @@ async function preloadProxyHost() {
 }
 
 (async () => {
+    await initJSCDN();
     await preloadProxyHost();
 	console.log('preloaded proxy host', window.overrideWssBase);
     ProxyFinder.start();

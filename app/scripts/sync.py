@@ -21,7 +21,7 @@ WHITELIST = {'.git', '.gitignore', 'app', 'readme.md', 'functions', '_headers'}
 
 # Global flags
 DRY_RUN = False
-BUILD_URL = 'https://dev.shellshock.io'
+BUILD_URL = 'localhost'
 
 
 def abort(message):
