@@ -44,26 +44,40 @@ def main():
     old_number = data.get('build_number', 0)
 
     # Check if version changed
-    if old_version == git_hash:
+    version_changed = old_version != git_hash
+    if not version_changed:
         print(f"No change: build_version is already {git_hash[:8]}...")
         print(f"  build_number remains: {old_number}")
-        return
-
-    # Update values (only increment build_number if version changed)
-    data['build_version'] = git_hash
-    data['build_number'] = old_number + 1
-
-    if DRY_RUN:
-        print(f"[DRY-RUN] Would update {build_file}:")
-        print(f"  build_version: {old_version[:8] if old_version else '(empty)'} → {git_hash[:8]}")
-        print(f"  build_number: {old_number} → {old_number + 1}")
     else:
-        with open(build_file, 'w') as f:
-            json.dump(data, f, indent='\t')
-            f.write('\n')
-        print(f"✓ Updated build.json")
-        print(f"  build_version: {git_hash}")
-        print(f"  build_number: {old_number + 1}")
+        # Update values (only increment build_number if version changed)
+        data['build_version'] = git_hash
+        data['build_number'] = old_number + 1
+
+        if DRY_RUN:
+            print(f"[DRY-RUN] Would update {build_file}:")
+            print(f"  build_version: {old_version[:8] if old_version else '(empty)'} → {git_hash[:8]}")
+            print(f"  build_number: {old_number} → {old_number + 1}")
+        else:
+            with open(build_file, 'w') as f:
+                json.dump(data, f, indent='\t')
+                f.write('\n')
+            print(f"✓ Updated build.json")
+            print(f"  build_version: {git_hash}")
+            print(f"  build_number: {old_number + 1}")
+
+    # Always run makeShell.sh to rewrite index.html with CDN paths
+    shell_script = script_dir / 'makeShell.sh'
+    if DRY_RUN:
+        print(f"[DRY-RUN] Would run makeShell.sh {git_hash}")
+    else:
+        print(f"\nRunning makeShell.sh {git_hash[:8]}...")
+        result = subprocess.run(
+            ['bash', str(shell_script), git_hash],
+            cwd=str(script_dir)
+        )
+        if result.returncode != 0:
+            print(f"makeShell.sh failed with exit code {result.returncode}")
+            sys.exit(result.returncode)
 
 
 if __name__ == '__main__':
