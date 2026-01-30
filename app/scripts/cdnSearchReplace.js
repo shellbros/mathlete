@@ -14,7 +14,7 @@ const CDN = process.argv[2];
 
 if (!CDN) {
 	console.error('CDN argument missing');
-	console.error('Usage: node gh-rewrite-paths-cdn.js <cdn-url>');
+	console.error('Usage: node cdnSearchReplace.js <cdn-url>');
 	process.exit(1);
 }
 
@@ -64,6 +64,7 @@ function isAssetPath(p) {
     !p.startsWith('data:') &&
     !p.startsWith('#') &&
     !p.startsWith(CDN) &&
+    !p.includes('${') &&
     p !== 'app/checker.js'
   );
 }

@@ -10,23 +10,29 @@ Usage:
 import urllib.request
 
 
-JSDELIVR_PURGE_URL = "https://purge.jsdelivr.net/gh/shellbros/mathlete/app/build.json"
+JSDELIVR_PURGE_URLS = [
+    "https://purge.jsdelivr.net/gh/shellbros/mathlete/app/build.json",
+    "https://purge.jsdelivr.net/gh/shellbros/mathlete/app/checker.js",
+    "https://purge.jsdelivr.net/gh/shellbros/mathlete/index.js",
+]
 
 
 def main():
-    print("Purging jsDelivr cache for build.json...")
-    try:
-        req = urllib.request.Request(JSDELIVR_PURGE_URL)
-        with urllib.request.urlopen(req) as response:
-            if response.status == 200:
-                print(f"✓ Cache purged successfully")
-                print(f"  URL: {JSDELIVR_PURGE_URL}")
-            else:
-                print(f"✗ Unexpected status: {response.status}")
-    except Exception as e:
-        print(f"✗ Failed to purge: {e}")
-        return 1
-    return 0
+    print("Purging jsDelivr cache...")
+    failed = False
+    for url in JSDELIVR_PURGE_URLS:
+        try:
+            req = urllib.request.Request(url)
+            with urllib.request.urlopen(req) as response:
+                if response.status == 200:
+                    print(f"✓ Purged: {url}")
+                else:
+                    print(f"✗ Unexpected status {response.status}: {url}")
+                    failed = True
+        except Exception as e:
+            print(f"✗ Failed to purge {url}: {e}")
+            failed = True
+    return 1 if failed else 0
 
 
 if __name__ == '__main__':
